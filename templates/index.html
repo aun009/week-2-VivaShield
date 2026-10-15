@@ -1,662 +1,804 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VivaShield AI — Open-Source Capstone Viva Defense & Examiner Trap Predictor</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VivaShield — Viva Prep Tool</title>
   <style>
-    @media print {
-      body { background: white !important; color: black !important; }
-      .no-print { display: none !important; }
-      .print-only { display: block !important; }
-      .card-print { border: 1px solid #ddd !important; box-shadow: none !important; break-inside: avoid; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #fafafa;
+      --surface: #fff;
+      --border: #e4e4e7;
+      --border-focus: #71717a;
+      --text: #18181b;
+      --muted: #71717a;
+      --subtle: #f4f4f5;
+      --accent: #18181b;
+      --accent-fg: #fff;
+      --danger: #ef4444;
+      --success: #16a34a;
+      --warn-bg: #fef9c3;
+      --warn-border: #fde047;
+      --warn-text: #713f12;
+      --radius: 6px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
     }
-    .print-only { display: none; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ---------- Layout ---------- */
+    .topbar {
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar-logo { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
+    .topbar-sep  { color: var(--border); font-size: 18px; }
+    .topbar-sub  { color: var(--muted); font-size: 13px; }
+    .topbar-right{ margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #d1d5db;
+      display: inline-block;
+    }
+    .status-dot.ok  { background: var(--success); }
+    .status-label   { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 20px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 720px) {
+      .container { grid-template-columns: 1fr; }
+    }
+
+    /* ---------- Panel ---------- */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .panel-body { padding: 16px; }
+
+    /* ---------- Form ---------- */
+    .field + .field { margin-top: 14px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+
+    label .hint {
+      font-weight: 400;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus { border-color: var(--border-focus); }
+
+    textarea { resize: vertical; }
+
+    .mono-input {
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    /* ---------- Samples strip ---------- */
+    .samples {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sample-btn {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--subtle);
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .sample-btn:hover { border-color: var(--border-focus); background: var(--surface); }
+
+    /* ---------- Button ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: opacity 0.15s, background 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border-color: var(--accent);
+    }
+    .btn-primary:hover   { opacity: 0.85; }
+    .btn-primary:disabled{ opacity: 0.4; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { background: var(--subtle); }
+
+    .btn-full { width: 100%; justify-content: center; margin-top: 16px; }
+
+    /* ---------- Row helpers ---------- */
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .row .btn-ghost { flex: 0 0 auto; }
+
+    /* ---------- Output panel ---------- */
+    #output-panel { display: none; }
+
+    /* Score bar */
+    .score-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .score-left { flex: 1; }
+
+    .score-number {
+      font-size: 36px;
+      font-weight: 700;
+      font-family: var(--mono);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .score-tag {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+
+    .tag-low  { background: #dcfce7; border-color: #86efac; color: #15803d; }
+    .tag-mid  { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+    .tag-high { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+
+    .score-verdict {
+      flex: 1;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* Engine pill */
+    .engine-row {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .engine-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .export-row { display: flex; gap: 6px; }
+
+    /* Sections */
+    .section { border-top: 1px solid var(--border); }
+
+    .section-title {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--subtle);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .section-title:hover { background: #ececed; }
+
+    .section-body { padding: 0 16px; }
+
+    /* Warn box (vulnerabilities) */
+    .warn-box {
+      margin: 12px 0;
+      padding: 10px 12px;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      border-radius: var(--radius);
+    }
+
+    .warn-box ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .warn-box li {
+      font-size: 13px;
+      color: var(--warn-text);
+      padding: 2px 0;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .warn-box li::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      color: var(--warn-border);
+    }
+
+    /* Trap card */
+    .trap-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 10px 0;
+      overflow: hidden;
+    }
+
+    .trap-q {
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--subtle);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .trap-meta {
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-style: italic;
+    }
+
+    .trap-answer {
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .trap-answer strong { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+
+    /* QA row */
+    .qa-row {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .qa-row:last-child { border-bottom: none; }
+
+    .qa-q {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .qa-a {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Cheatsheet */
+    .cheat-list {
+      list-style: none;
+      padding: 12px 0;
+    }
+
+    .cheat-list li {
+      display: flex;
+      gap: 8px;
+      padding: 7px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+
+    .cheat-list li:last-child { border-bottom: none; }
+
+    .cheat-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 18px;
+      padding-top: 1px;
+    }
+
+    /* Empty state */
+    #empty-state {
+      padding: 48px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    #empty-state p { font-size: 13px; margin-top: 6px; }
+    #empty-state .empty-title { font-size: 15px; font-weight: 600; color: var(--text); }
+
+    /* Loading bar */
+    #loading-bar {
+      display: none;
+      padding: 20px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Print */
+    @media print {
+      .topbar, .left-col, .engine-row, .export-row, .section-title::after,
+      #empty-state, #loading-bar { display: none !important; }
+      .container { grid-template-columns: 1fr; }
+      body { background: white; }
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-brand-500 selection:text-white">
+<body>
 
-  <!-- Top Announcement Bar -->
-  <header class="no-print border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-amber-500 flex items-center justify-center font-bold text-xl shadow-lg shadow-brand-500/20">
-          🛡️
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">VivaShield AI</span>
-            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Hacktoberfest '26</span>
-          </div>
-          <p class="text-xs text-slate-400">Open-Source Capstone Viva Defense & Examiner Trap Predictor</p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <div id="modelStatusPill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-xs">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="activeModelLabel" class="text-slate-300 font-mono">Checking Ollama...</span>
-        </div>
-        <button onclick="openEconomicsModal()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-200 transition flex items-center gap-1.5">
-          <span>💸</span> <span>Side Hustle Math</span>
-        </button>
-      </div>
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="topbar-logo">VivaShield</span>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-sub">Capstone Viva Prep</span>
+    <div class="topbar-right">
+      <span class="status-dot" id="dot"></span>
+      <span class="status-label" id="model-label">checking...</span>
+      <button class="btn btn-ghost" onclick="window.print()">Print</button>
     </div>
-  </header>
-
-  <!-- Printable Header (Only appears when printed) -->
-  <div class="print-only p-6 border-b border-gray-300 mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">VivaShield AI — Project Defense & Cheatsheet</h1>
-    <p id="printSubtitle" class="text-sm text-gray-600">Generated for final-year engineering viva defense</p>
   </div>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Main grid -->
+  <div class="container">
 
-    <!-- Value Proposition Hero -->
-    <div class="no-print mb-8 p-6 rounded-2xl bg-gradient-to-r from-brand-950/40 via-slate-900/60 to-slate-900/40 border border-brand-500/20 relative overflow-hidden">
-      <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="max-w-3xl">
-        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-brand-500/10 text-brand-300 text-xs font-semibold mb-3 border border-brand-500/20">
-          <span>⚡ Built for ₹49 Micro-SaaS on Open Weights</span>
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">
-          Don't freeze in your final-year project viva.
-        </h1>
-        <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
-          External examiners love to grill students on copied architecture, concurrency bottlenecks, and library choices. 
-          <strong class="text-white">VivaShield</strong> runs locally with <span class="text-brand-400 font-semibold">Google Gemma 2</span> to predict their hardest trap questions, model answers, and printable hallway cheatsheets. <strong class="text-emerald-400">Zero cloud API cost. 100% student IP privacy.</strong>
-        </p>
-      </div>
-    </div>
+    <!-- LEFT — Input -->
+    <div class="left-col">
+      <div class="panel">
+        <div class="panel-header">Project Details</div>
+        <div class="panel-body">
 
-    <!-- Main Grid: Input Workspace vs Output Dossier -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-      <!-- LEFT: Project Input Console (5 cols) -->
-      <div class="no-print lg:col-span-5 space-y-6">
-
-        <!-- 1-Click Samples Card -->
-        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <span>🚀</span> 1-Click Sample Projects
-            </span>
-            <span class="text-[11px] text-brand-400 font-medium">Click to test instantly</span>
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <button onclick="loadSample('agri_iot')" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-brand-600/20 border border-slate-700/80 hover:border-brand-500/50 text-left transition group">
-              <div class="text-xs font-semibold text-slate-200 group-hover:text-brand-300 truncate">AgriPulse</div>
-              <div class="text-[10px] text-slate-400 truncate">IoT & ResNet-18</div>
-            </button>
-            <button onclick="loadSample('fintech_microservices')" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-brand-600/20 border border-slate-700/80 hover:border-brand-500/50 text-left transition group">
-              <div class="text-xs font-semibold text-slate-200 group-hover:text-brand-300 truncate">PayFlow</div>
-              <div class="text-[10px] text-slate-400 truncate">Go, Kafka, Redis</div>
-            </button>
-            <button onclick="loadSample('healthcare_web3')" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-brand-600/20 border border-slate-700/80 hover:border-brand-500/50 text-left transition group">
-              <div class="text-xs font-semibold text-slate-200 group-hover:text-brand-300 truncate">MedVault</div>
-              <div class="text-[10px] text-slate-400 truncate">Solidity, IPFS</div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Project Form -->
-        <div class="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
-          
-          <!-- GitHub Import Bar -->
-          <div class="pb-3 border-b border-slate-800">
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
-              Import Public GitHub Repository <span class="text-slate-500 font-normal">(Optional)</span>
-            </label>
-            <div class="flex gap-2">
-              <input type="text" id="githubUrl" placeholder="https://github.com/owner/capstone-repo" class="w-full text-xs px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500">
-              <button onclick="fetchRepo()" id="fetchRepoBtn" class="px-3 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-200 transition shrink-0 flex items-center gap-1">
-                <span>Fetch</span>
-              </button>
-            </div>
-            <p id="githubFetchStatus" class="text-[11px] text-slate-500 mt-1 hidden"></p>
+          <!-- Quick samples -->
+          <div style="margin-bottom:4px; font-size:12px; color:var(--muted);">Try a sample:</div>
+          <div class="samples">
+            <button class="sample-btn" onclick="loadSample('agri_iot')">AgriPulse — IoT + CNN</button>
+            <button class="sample-btn" onclick="loadSample('fintech_microservices')">PayFlow — Go + Kafka</button>
+            <button class="sample-btn" onclick="loadSample('healthcare_web3')">MedVault — Solidity</button>
           </div>
 
-          <!-- Project Title -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Project Title</label>
-            <input type="text" id="projTitle" placeholder="e.g., AgriPulse: Real-Time Crop Disease Detection" class="w-full text-xs px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+          <div class="field">
+            <label>Project title</label>
+            <input type="text" id="projTitle" placeholder="e.g. Smart Attendance System using Face Recognition" />
           </div>
 
-          <!-- Tech Stack -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Tech Stack & Libraries</label>
-            <input type="text" id="projTech" placeholder="e.g., Python, Flask, PyTorch, ESP32, MQTT, SQLite" class="w-full text-xs px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+          <div class="field">
+            <label>Tech stack <span class="hint">(comma separated)</span></label>
+            <input type="text" id="projTech" placeholder="e.g. Python, Flask, OpenCV, SQLite, Raspberry Pi" />
           </div>
 
-          <!-- Abstract / Architecture -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">
-              Project Description / README / Architecture Abstract
-            </label>
-            <textarea id="projAbstract" rows="5" placeholder="Paste your project abstract, design overview, or key workflow here..." class="w-full text-xs p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"></textarea>
+          <div class="field">
+            <label>Describe your project <span class="hint">(what it does, how it works)</span></label>
+            <textarea id="projAbstract" rows="5" placeholder="Paste your abstract, README, or just describe what your project does in a few lines..."></textarea>
           </div>
 
-          <!-- Optional Code Snippet -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">
-              Key Code Snippet / Endpoint <span class="text-slate-500 font-normal">(Where shortcuts live!)</span>
-            </label>
-            <textarea id="projCode" rows="4" placeholder="// Paste a route, database handler, or model training loop snippet..." class="w-full text-xs p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono text-emerald-400"></textarea>
+          <div class="field">
+            <label>Key code snippet <span class="hint">(optional but helps)</span></label>
+            <textarea id="projCode" rows="4" class="mono-input" placeholder="// Paste a route, model call, or database query..."></textarea>
           </div>
 
-          <!-- Model & Persona Settings -->
-          <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+          <div class="field row">
             <div>
-              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Examiner Persona</label>
-              <select id="personaSelect" class="w-full text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 focus:outline-none focus:border-brand-500">
-                <option value="strict">Strict External (IIT/NIT Prof)</option>
-                <option value="standard">Standard University Syllabus</option>
-                <option value="industry">Principal Architect (CTO)</option>
+              <label>Examiner style</label>
+              <select id="personaSelect">
+                <option value="strict">Strict (IIT/NIT External)</option>
+                <option value="standard">Standard University</option>
+                <option value="industry">Industry / CTO</option>
               </select>
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Open-Weight Model</label>
-              <select id="modelSelect" class="w-full text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 focus:outline-none focus:border-brand-500">
-                <option value="gemma2:2b">Gemma 2 (2B) — Default</option>
+              <label>Model</label>
+              <select id="modelSelect">
+                <option value="gemma2:2b">gemma2:2b</option>
               </select>
             </div>
           </div>
 
-          <!-- Generate Action Button -->
-          <button onclick="analyzeProject()" id="analyzeBtn" class="w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-500 hover:to-indigo-500 text-white shadow-lg shadow-brand-500/25 transition transform active:scale-[0.98] flex items-center justify-center gap-2">
-            <span id="btnIcon">🛡️</span>
-            <span id="btnText">Generate Viva Defense Dossier</span>
+          <button class="btn btn-primary btn-full" id="analyzeBtn" onclick="analyzeProject()">
+            <span id="btnText">Generate Defense Sheet</span>
           </button>
 
-          <p class="text-[11px] text-center text-slate-400">
-            🔒 Safe & Private: Project code stays on your localhost. Zero third-party cloud logging.
+          <p style="font-size:11px; color:var(--muted); text-align:center; margin-top:10px;">
+            Runs locally. Your code never leaves this machine.
           </p>
 
         </div>
       </div>
-
-      <!-- RIGHT: Output Dossier (7 cols) -->
-      <div class="lg:col-span-7 space-y-6">
-
-        <!-- Initial Placeholder State -->
-        <div id="emptyState" class="p-12 rounded-2xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-4">
-          <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-800/80 flex items-center justify-center text-3xl">
-            📋
-          </div>
-          <div class="max-w-sm mx-auto">
-            <h3 class="font-bold text-slate-200 text-base mb-1">No Defense Dossier Generated Yet</h3>
-            <p class="text-xs text-slate-400 mb-4">
-              Click one of the 1-click sample projects on the left or paste your own project to generate examiner traps and model answers.
-            </p>
-            <button onclick="loadSample('agri_iot')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600/20 text-brand-300 border border-brand-500/30 text-xs font-semibold hover:bg-brand-600/30 transition">
-              <span>Try AgriPulse IoT Sample →</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Dossier Container (Hidden initially) -->
-        <div id="dossierContainer" class="hidden space-y-6">
-
-          <!-- Action & Export Bar -->
-          <div class="no-print flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
-            <div class="flex items-center gap-2">
-              <span id="engineBadge" class="text-[11px] px-2.5 py-1 rounded-md font-mono bg-brand-500/10 text-brand-300 border border-brand-500/20">
-                Engine: Ollama
-              </span>
-            </div>
-            <div class="flex items-center gap-2">
-              <button onclick="window.print()" class="px-3 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
-                <span>🖨️</span> <span>Print Cheatsheet</span>
-              </button>
-              <button onclick="exportMarkdown()" class="px-3 py-1 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
-                <span>⬇️</span> <span>Export .md</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Score & Vulnerabilities Card -->
-          <div class="card-print p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Predicted Viva Readiness</span>
-                <h3 id="verdictSummary" class="text-sm font-semibold text-slate-200 mt-1 max-w-md"></h3>
-              </div>
-              <div class="text-right">
-                <div class="flex items-baseline gap-1">
-                  <span id="scoreNumber" class="text-4xl font-extrabold text-brand-400 font-mono">72</span>
-                  <span class="text-sm text-slate-400 font-bold">/100</span>
-                </div>
-                <span id="scoreTag" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  Moderate Risk
-                </span>
-              </div>
-            </div>
-
-            <!-- Vulnerability Warning Box -->
-            <div class="p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/20">
-              <div class="flex items-center gap-1.5 text-xs font-bold text-rose-400 mb-2">
-                <span>⚠️</span> <span>Top Architectural Weak Spots (Examiners Will Attack Here):</span>
-              </div>
-              <ul id="vulnerabilityList" class="space-y-1.5 text-xs text-rose-200/90 list-disc list-inside"></ul>
-            </div>
-          </div>
-
-          <!-- Section 1: 5 Examiner Traps -->
-          <div class="card-print p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">🎯</span>
-                <h2 class="text-base font-bold text-white">The 5 Examiner Trap Questions</h2>
-              </div>
-              <span class="text-[11px] text-amber-400 font-mono">High Probability</span>
-            </div>
-            <div id="trapsContainer" class="space-y-4"></div>
-          </div>
-
-          <!-- Section 2: Technical Architecture Q&A -->
-          <div class="card-print p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
-              <span class="text-lg">⚙️</span>
-              <h2 class="text-base font-bold text-white">Core System Architecture Defense</h2>
-            </div>
-            <div id="archContainer" class="space-y-3"></div>
-          </div>
-
-          <!-- Section 3: Chaos & What-If Edge Cases -->
-          <div class="card-print p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
-              <span class="text-lg">🧪</span>
-              <h2 class="text-base font-bold text-white">The "What-If" Stress Test Scenarios</h2>
-            </div>
-            <div id="whatIfContainer" class="space-y-3"></div>
-          </div>
-
-          <!-- Section 4: Hallway Cheatsheet -->
-          <div class="card-print p-6 rounded-2xl bg-gradient-to-br from-brand-950/40 via-slate-900 to-slate-900 border border-brand-500/30 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">📄</span>
-                <h2 class="text-base font-bold text-brand-300">1-Page Hallway Cheatsheet</h2>
-              </div>
-              <span class="text-[11px] text-slate-400">Read 5 mins before viva</span>
-            </div>
-            <p class="text-xs text-slate-400">Memorize these exact punchlines for common examiner curves:</p>
-            <ul id="cheatsheetList" class="space-y-2 text-xs text-slate-200"></ul>
-          </div>
-
-        </div>
-
-      </div>
-
     </div>
 
-  </main>
+    <!-- RIGHT — Output -->
+    <div class="right-col">
 
-  <!-- Side Hustle Economics Modal -->
-  <div id="economicsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl relative">
-      <button onclick="closeEconomicsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
-
-      <div>
-        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-semibold mb-2 border border-emerald-500/20">
-          <span>💰 Hacktoberfest '26 Side Hustle Theme</span>
-        </div>
-        <h3 class="text-lg font-bold text-white">Why Open Innovation Makes This Business Viable</h3>
-        <p class="text-xs text-slate-400 mt-1">
-          Unit economics comparison of charging ₹49 ($0.59) per student viva defense report.
-        </p>
+      <!-- Empty state -->
+      <div id="empty-state">
+        <div class="empty-title">No dossier generated yet</div>
+        <p>Fill in your project details on the left, or click a sample to test instantly.</p>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Closed API Card -->
-        <div class="p-4 rounded-xl bg-slate-950 border border-rose-500/20 space-y-2">
-          <div class="text-xs font-bold text-rose-400">Closed Cloud API (GPT-4o)</div>
-          <div class="text-2xl font-black text-slate-200">₹18.50 <span class="text-xs font-normal text-slate-500">/run</span></div>
-          <p class="text-[11px] text-slate-400 leading-snug">
-            30k tokens for student code eats 38% of your revenue in API bills. Zero offline use.
-          </p>
-          <div class="text-xs text-rose-300 font-semibold pt-2 border-t border-slate-800">
-            Margin: 62% (Vulnerable)
+      <!-- Loading -->
+      <div id="loading-bar">
+        <span class="spinner"></span> Generating with <span id="loading-model">gemma2:2b</span>...
+      </div>
+
+      <!-- Result panel -->
+      <div class="panel" id="output-panel">
+
+        <!-- Score row -->
+        <div class="score-row">
+          <div class="score-left">
+            <div class="score-number" id="scoreNumber">—</div>
+            <div id="scoreTag" class="score-tag tag-mid">—</div>
+          </div>
+          <div class="score-verdict" id="verdictSummary"></div>
+        </div>
+
+        <!-- Engine + export row -->
+        <div class="engine-row">
+          <span class="engine-label" id="engineLabel">engine: —</span>
+          <div class="export-row">
+            <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="exportMarkdown()">Export .md</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="window.print()">Print</button>
           </div>
         </div>
 
-        <!-- Open Weights Card -->
-        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-2">
-          <div class="text-xs font-bold text-emerald-400">Open-Weights (Gemma 2B)</div>
-          <div class="text-2xl font-black text-emerald-300">₹0.00 <span class="text-xs font-normal text-slate-500">/run</span></div>
-          <p class="text-[11px] text-slate-400 leading-snug">
-            Runs locally on client laptop or fixed $5 VPS. Zero per-token costs. Student code never leaves localhost.
-          </p>
-          <div class="text-xs text-emerald-400 font-semibold pt-2 border-t border-slate-800">
-            Margin: 98.4% (Pure Profit)
+        <!-- Vulnerabilities -->
+        <div class="section">
+          <div class="section-title" onclick="toggle('sec-vuln')">
+            <span>Weak spots</span>
+            <span id="sec-vuln-icon">—</span>
+          </div>
+          <div class="section-body" id="sec-vuln">
+            <div class="warn-box">
+              <ul id="vulnList"></ul>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="p-3 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300 space-y-1">
-        <strong class="text-white">The Pune Xerox Shop Model:</strong>
-        <p class="text-slate-400 text-[11px]">
-          Xerox shops near engineering colleges charge ₹500 to bind capstone reports. Offering VivaShield printouts as a ₹99 add-on creates an effortless B2B2C distribution channel with 95%+ margin.
-        </p>
-      </div>
+        <!-- Trap questions -->
+        <div class="section">
+          <div class="section-title" onclick="toggle('sec-traps')">
+            <span>Examiner trap questions</span>
+            <span id="sec-traps-icon">—</span>
+          </div>
+          <div class="section-body" id="sec-traps">
+            <div id="trapsContainer"></div>
+          </div>
+        </div>
 
-      <button onclick="closeEconomicsModal()" class="w-full py-2.5 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
-        Got it, close
-      </button>
+        <!-- Architecture Q&A -->
+        <div class="section">
+          <div class="section-title" onclick="toggle('sec-arch')">
+            <span>Architecture Q&A</span>
+            <span id="sec-arch-icon">—</span>
+          </div>
+          <div class="section-body" id="sec-arch">
+            <div id="archContainer"></div>
+          </div>
+        </div>
+
+        <!-- What-if -->
+        <div class="section">
+          <div class="section-title" onclick="toggle('sec-whatif')">
+            <span>What-if scenarios</span>
+            <span id="sec-whatif-icon">—</span>
+          </div>
+          <div class="section-body" id="sec-whatif">
+            <div id="whatIfContainer"></div>
+          </div>
+        </div>
+
+        <!-- Cheatsheet -->
+        <div class="section">
+          <div class="section-title" onclick="toggle('sec-cheat')">
+            <span>Hallway cheatsheet</span>
+            <span id="sec-cheat-icon">—</span>
+          </div>
+          <div class="section-body" id="sec-cheat">
+            <ul class="cheat-list" id="cheatList"></ul>
+          </div>
+        </div>
+
+      </div>
     </div>
+
   </div>
 
   <script>
     let sampleCache = {};
     let currentDossier = null;
 
-    // Load available models on boot
+    // ---------- Boot ----------
+    window.addEventListener('DOMContentLoaded', () => {
+      loadModels();
+      loadSamples();
+    });
+
     async function loadModels() {
       try {
-        const res = await fetch('/api/models');
-        const data = await res.json();
-        const select = document.getElementById('modelSelect');
-        const pill = document.getElementById('modelStatusPill');
-        const label = document.getElementById('activeModelLabel');
-        
-        select.innerHTML = '';
-        if (data.models && data.models.length > 0) {
-          pill.classList.remove('hidden');
-          label.textContent = `Ollama: ${data.default_model}`;
-          data.models.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.name;
-            opt.textContent = `${m.name} (${m.size_mb} MB)${m.is_gemma ? ' ⭐ Gemma Track' : ''}`;
-            if (m.name === data.default_model) opt.selected = true;
-            select.appendChild(opt);
-          });
+        const r = await fetch('/api/models');
+        const d = await r.json();
+        const sel = document.getElementById('modelSelect');
+        const dot = document.getElementById('dot');
+        const lbl = document.getElementById('model-label');
+        if (d.models && d.models.length) {
+          dot.classList.add('ok');
+          lbl.textContent = d.default_model;
+          sel.innerHTML = d.models.map(m =>
+            `<option value="${m.name}"${m.name === d.default_model ? ' selected' : ''}>${m.name}</option>`
+          ).join('');
         } else {
-          label.textContent = "Ollama: Hybrid Mode";
-          const opt = document.createElement('option');
-          opt.value = "gemma2:2b";
-          opt.textContent = "gemma2:2b (Ollama / Fallback)";
-          select.appendChild(opt);
+          lbl.textContent = 'no model found';
         }
-      } catch (e) {
-        console.error("Failed to load models:", e);
-      }
+      } catch { }
     }
 
-    // Load sample projects from backend
-    async function initSamples() {
+    async function loadSamples() {
       try {
-        const res = await fetch('/api/samples');
-        sampleCache = await res.json();
-      } catch (e) {
-        console.error("Failed to fetch samples:", e);
-      }
+        const r = await fetch('/api/samples');
+        sampleCache = await r.json();
+      } catch { }
     }
 
     function loadSample(key) {
       const s = sampleCache[key];
       if (!s) return;
-      document.getElementById('projTitle').value = s.title;
-      document.getElementById('projTech').value = s.tech_stack;
+      document.getElementById('projTitle').value    = s.title;
+      document.getElementById('projTech').value     = s.tech_stack;
       document.getElementById('projAbstract').value = s.abstract;
-      document.getElementById('projCode').value = s.code_snippet;
-      
-      // Auto-trigger analyze for fast preview
+      document.getElementById('projCode').value     = s.code_snippet;
       analyzeProject();
     }
 
-    async function fetchRepo() {
-      const url = document.getElementById('githubUrl').value.trim();
-      const statusEl = document.getElementById('githubFetchStatus');
-      const btn = document.getElementById('fetchRepoBtn');
-      if (!url) return;
-
-      btn.disabled = true;
-      btn.textContent = 'Fetching...';
-      statusEl.classList.remove('hidden');
-      statusEl.textContent = 'Querying GitHub API...';
-
-      try {
-        const res = await fetch('/api/fetch-repo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repo_url: url })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          document.getElementById('projTitle').value = `${data.owner}/${data.repo}`;
-          document.getElementById('projAbstract').value = `Repository: ${data.owner}/${data.repo}\n\nTop Directory Files:\n${(data.file_tree || []).slice(0, 15).join('\n')}\n\nREADME Summary:\n${(data.readme || '').slice(0, 2000)}`;
-          statusEl.textContent = `✓ Fetched README & ${data.file_tree ? data.file_tree.length : 0} file paths!`;
-          statusEl.className = 'text-[11px] text-emerald-400 mt-1';
-        } else {
-          statusEl.textContent = `✕ ${data.detail || 'Failed to fetch repo'}`;
-          statusEl.className = 'text-[11px] text-rose-400 mt-1';
-        }
-      } catch (e) {
-        statusEl.textContent = `✕ Error: ${e.message}`;
-        statusEl.className = 'text-[11px] text-rose-400 mt-1';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Fetch';
-      }
-    }
-
+    // ---------- Analyze ----------
     async function analyzeProject() {
-      const title = document.getElementById('projTitle').value.trim();
-      const tech_stack = document.getElementById('projTech').value.trim();
+      const title    = document.getElementById('projTitle').value.trim();
+      const tech     = document.getElementById('projTech').value.trim();
       const abstract = document.getElementById('projAbstract').value.trim();
-      const code_snippet = document.getElementById('projCode').value.trim();
-      const model = document.getElementById('modelSelect').value;
-      const persona = document.getElementById('personaSelect').value;
+      const code     = document.getElementById('projCode').value.trim();
+      const model    = document.getElementById('modelSelect').value;
+      const persona  = document.getElementById('personaSelect').value;
 
       if (!title || !abstract) {
-        alert("Please provide at least a Project Title and Project Description.");
+        alert('Please enter a project title and description.');
         return;
       }
 
       const btn = document.getElementById('analyzeBtn');
-      const btnText = document.getElementById('btnText');
-      const btnIcon = document.getElementById('btnIcon');
-
+      document.getElementById('btnText').textContent = 'Generating...';
       btn.disabled = true;
-      btnText.textContent = "Analyzing Capstone with Gemma...";
-      btnIcon.textContent = "⏳";
+
+      document.getElementById('empty-state').style.display  = 'none';
+      document.getElementById('output-panel').style.display = 'none';
+      document.getElementById('loading-bar').style.display  = 'block';
+      document.getElementById('loading-model').textContent  = model;
 
       try {
         const res = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title,
-            tech_stack,
-            abstract,
-            code_snippet,
-            model,
-            examiner_persona: persona
-          })
+          body: JSON.stringify({ title, tech_stack: tech, abstract, code_snippet: code, model, examiner_persona: persona })
         });
-
         const data = await res.json();
         currentDossier = data;
-        renderDossier(data);
+        render(data);
       } catch (e) {
-        alert("Analysis failed: " + e.message);
+        alert('Error: ' + e.message);
+        document.getElementById('empty-state').style.display = 'block';
       } finally {
+        document.getElementById('loading-bar').style.display  = 'none';
+        document.getElementById('btnText').textContent = 'Generate Defense Sheet';
         btn.disabled = false;
-        btnText.textContent = "Generate Viva Defense Dossier";
-        btnIcon.textContent = "🛡️";
       }
     }
 
-    function renderDossier(data) {
-      document.getElementById('emptyState').classList.add('hidden');
-      document.getElementById('dossierContainer').classList.remove('hidden');
-
+    // ---------- Render ----------
+    function render(data) {
       const d = data.dossier;
-      document.getElementById('engineBadge').textContent = `Engine: ${data.engine}`;
-      document.getElementById('verdictSummary').textContent = d.verdict_summary;
-      document.getElementById('scoreNumber').textContent = d.readiness_score;
 
-      const scoreTag = document.getElementById('scoreTag');
+      document.getElementById('output-panel').style.display = 'block';
+
+      // Score
+      document.getElementById('scoreNumber').textContent = d.readiness_score;
+      document.getElementById('verdictSummary').textContent = d.verdict_summary;
+
+      const tag = document.getElementById('scoreTag');
       if (d.readiness_score >= 80) {
-        scoreTag.textContent = "Low Risk / Strong Defense";
-        scoreTag.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        tag.textContent = 'Low risk'; tag.className = 'score-tag tag-low';
       } else if (d.readiness_score >= 60) {
-        scoreTag.textContent = "Moderate Risk / Trap Exposed";
-        scoreTag.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20";
+        tag.textContent = 'Moderate risk'; tag.className = 'score-tag tag-mid';
       } else {
-        scoreTag.textContent = "High Risk / Review Immediately";
-        scoreTag.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20";
+        tag.textContent = 'High risk'; tag.className = 'score-tag tag-high';
       }
+
+      document.getElementById('engineLabel').textContent = 'engine: ' + data.engine;
 
       // Vulnerabilities
-      const vulnList = document.getElementById('vulnerabilityList');
-      vulnList.innerHTML = '';
-      (d.vulnerabilities || []).forEach(v => {
-        const li = document.createElement('li');
-        li.textContent = v;
-        vulnList.appendChild(li);
-      });
+      const vl = document.getElementById('vulnList');
+      vl.innerHTML = (d.vulnerabilities || []).map(v => `<li>${v}</li>`).join('');
 
-      // Trap Questions
-      const trapsContainer = document.getElementById('trapsContainer');
-      trapsContainer.innerHTML = '';
-      (d.trap_questions || []).forEach((t, i) => {
-        const card = document.createElement('div');
-        card.className = "p-4 rounded-xl bg-slate-950 border border-amber-500/20 space-y-2";
-        card.innerHTML = `
-          <div class="flex items-start justify-between gap-2">
-            <span class="text-xs font-bold text-amber-300">Trap #${i + 1}: ${t.question}</span>
-            <span class="px-1.5 py-0.5 text-[9px] uppercase tracking-wider rounded bg-amber-500/10 text-amber-400 font-mono shrink-0">Trap</span>
-          </div>
-          <div class="text-[11px] text-slate-400 italic">
-            <strong class="text-slate-300">Why they ask:</strong> ${t.why_examiner_asks}
-          </div>
-          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200">
-            <strong class="text-emerald-400">Your Defense:</strong> "${t.bulletproof_answer}"
-          </div>
-        `;
-        trapsContainer.appendChild(card);
-      });
+      // Traps
+      const tc = document.getElementById('trapsContainer');
+      tc.innerHTML = (d.trap_questions || []).map((t, i) => `
+        <div class="trap-card">
+          <div class="trap-q">Q${i + 1} &mdash; ${t.question}</div>
+          <div class="trap-meta">Why they ask: ${t.why_examiner_asks}</div>
+          <div class="trap-answer"><strong>Your answer</strong>${t.bulletproof_answer}</div>
+        </div>
+      `).join('');
 
       // Architecture Q&A
-      const archContainer = document.getElementById('archContainer');
-      archContainer.innerHTML = '';
-      (d.architecture_qa || []).forEach((a, i) => {
-        const item = document.createElement('div');
-        item.className = "p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5";
-        item.innerHTML = `
-          <div class="text-xs font-semibold text-slate-200">Q${i + 1}: ${a.question}</div>
-          <div class="text-xs text-slate-400 leading-relaxed">${a.answer}</div>
-        `;
-        archContainer.appendChild(item);
-      });
+      const ac = document.getElementById('archContainer');
+      ac.innerHTML = (d.architecture_qa || []).map((a, i) => `
+        <div class="qa-row">
+          <div class="qa-q">Q${i + 1}: ${a.question}</div>
+          <div class="qa-a">${a.answer}</div>
+        </div>
+      `).join('');
 
-      // What-If Scenarios
-      const whatIfContainer = document.getElementById('whatIfContainer');
-      whatIfContainer.innerHTML = '';
-      (d.what_if_scenarios || []).forEach((w, i) => {
-        const item = document.createElement('div');
-        item.className = "p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5";
-        item.innerHTML = `
-          <div class="text-xs font-semibold text-indigo-300">⚡ ${w.scenario}</div>
-          <div class="text-xs text-slate-400 leading-relaxed">${w.answer}</div>
-        `;
-        whatIfContainer.appendChild(item);
-      });
+      // What-if
+      const wc = document.getElementById('whatIfContainer');
+      wc.innerHTML = (d.what_if_scenarios || []).map(w => `
+        <div class="qa-row">
+          <div class="qa-q">${w.scenario}</div>
+          <div class="qa-a">${w.answer}</div>
+        </div>
+      `).join('');
 
       // Cheatsheet
-      const cheatsheetList = document.getElementById('cheatsheetList');
-      cheatsheetList.innerHTML = '';
-      (d.hallway_cheatsheet || []).forEach((c, i) => {
-        const li = document.createElement('li');
-        li.className = "flex items-start gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80";
-        li.innerHTML = `<span class="text-brand-400 font-bold shrink-0">✓</span><span>${c}</span>`;
-        cheatsheetList.appendChild(li);
-      });
+      const cl = document.getElementById('cheatList');
+      cl.innerHTML = (d.hallway_cheatsheet || []).map((c, i) => `
+        <li>
+          <span class="cheat-num">${i + 1}.</span>
+          <span>${c}</span>
+        </li>
+      `).join('');
 
-      // Update print title
-      document.getElementById('printSubtitle').textContent = `Project Defense Dossier: ${document.getElementById('projTitle').value}`;
+      // Open all sections
+      ['sec-vuln','sec-traps','sec-arch','sec-whatif','sec-cheat'].forEach(id => {
+        document.getElementById(id).style.display = 'block';
+        document.getElementById(id + '-icon').textContent = '↑';
+      });
     }
 
+    // ---------- Toggle ----------
+    function toggle(id) {
+      const el = document.getElementById(id);
+      const ic = document.getElementById(id + '-icon');
+      const open = el.style.display !== 'none';
+      el.style.display  = open ? 'none' : 'block';
+      ic.textContent    = open ? '↓' : '↑';
+    }
+
+    // ---------- Export ----------
     function exportMarkdown() {
-      if (!currentDossier || !currentDossier.dossier) return;
+      if (!currentDossier) return;
       const d = currentDossier.dossier;
-      const title = document.getElementById('projTitle').value || "Project";
-      
-      let md = `# VivaShield Defense Dossier: ${title}\n\n`;
-      md += `**Readiness Score:** ${d.readiness_score}/100\n`;
-      md += `**Summary:** ${d.verdict_summary}\n\n`;
-      
-      md += `## ⚠️ Top Vulnerabilities\n`;
-      (d.vulnerabilities || []).forEach(v => md += `- ${v}\n`);
-      md += `\n`;
+      const title = document.getElementById('projTitle').value || 'Project';
+      let md = `# VivaShield — ${title}\n\n`;
+      md += `**Readiness:** ${d.readiness_score}/100 — ${d.verdict_summary}\n\n`;
+      md += `## Weak Spots\n` + (d.vulnerabilities || []).map(v => `- ${v}`).join('\n') + '\n\n';
+      md += `## Trap Questions\n\n` + (d.trap_questions || []).map((t, i) =>
+        `### Q${i+1}: ${t.question}\n*${t.why_examiner_asks}*\n\n**Answer:** ${t.bulletproof_answer}`
+      ).join('\n\n') + '\n\n';
+      md += `## Architecture Q&A\n\n` + (d.architecture_qa || []).map(a =>
+        `**${a.question}**\n${a.answer}`
+      ).join('\n\n') + '\n\n';
+      md += `## What-If\n\n` + (d.what_if_scenarios || []).map(w =>
+        `**${w.scenario}**\n${w.answer}`
+      ).join('\n\n') + '\n\n';
+      md += `## Cheatsheet\n` + (d.hallway_cheatsheet || []).map((c, i) => `${i+1}. ${c}`).join('\n');
 
-      md += `## 🎯 5 Examiner Trap Questions\n\n`;
-      (d.trap_questions || []).forEach((t, i) => {
-        md += `### Trap #${i+1}: ${t.question}\n`;
-        md += `*Why Examiner Asks:* ${t.why_examiner_asks}\n\n`;
-        md += `**Defense Answer:** ${t.bulletproof_answer}\n\n`;
-      });
-
-      md += `## ⚙️ Architecture Q&A\n\n`;
-      (d.architecture_qa || []).forEach((a, i) => {
-        md += `**Q: ${a.question}**\n${a.answer}\n\n`;
-      });
-
-      md += `## 🧪 What-If Scenarios\n\n`;
-      (d.what_if_scenarios || []).forEach(w => {
-        md += `**Scenario: ${w.scenario}**\n${w.answer}\n\n`;
-      });
-
-      md += `## 📄 Hallway Cheatsheet\n\n`;
-      (d.hallway_cheatsheet || []).forEach(c => md += `- ${c}\n`);
-
-      const blob = new Blob([md], { type: 'text/markdown' });
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}_viva_dossier.md`;
+      a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+      a.download = title.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_viva.md';
       a.click();
     }
-
-    function openEconomicsModal() {
-      document.getElementById('economicsModal').classList.remove('hidden');
-    }
-
-    function closeEconomicsModal() {
-      document.getElementById('economicsModal').classList.add('hidden');
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      loadModels();
-      initSamples();
-    });
   </script>
 </body>
 </html>
